@@ -32,8 +32,8 @@
 .idea
 #by mayunxi
 /.DS_Store
-myworkspace/.DS_Store
-myworkspace/._.DS_Store
+/myworkspace/.DS_Store
+/myworkspace/._.DS_Store
 /trunk/src/.DS_Store
 /trunk/ide/srs_clion/.DS_Store
 /trunk/ide/srs_qt/srs-qt.pro.user
