@@ -830,7 +830,7 @@ class SrsRtmpServer
 private:
     SrsHandshakeBytes* hs_bytes;
     SrsProtocol* protocol;
-    ISrsProtocolReaderWriter* io;
+    ISrsProtocolReaderWriter* io; //io = new SrsStSocket()
 public:
     SrsRtmpServer(ISrsProtocolReaderWriter* skt);
     virtual ~SrsRtmpServer();

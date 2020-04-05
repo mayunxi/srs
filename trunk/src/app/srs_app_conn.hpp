@@ -57,12 +57,13 @@ public:
 * the basic connection of SRS,
 * all connections accept from listener must extends from this base class,
 * server will add the connection to manager, and delete it when remove.
+* 抽象类(abstract class)
 */
 class SrsConnection : public virtual ISrsOneCycleThreadHandler, public virtual IKbpsDelta
 {
 private:
     /**
-    * each connection start a green thread,
+    * each connection start a green thread(协程=纤程=绿色线程),
     * when thread stop, the connection will be delete by server.
     */
     SrsOneCycleThread* pthread;

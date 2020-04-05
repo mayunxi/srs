@@ -58,7 +58,7 @@ int SrsStream::initialize(char* b, int nb)
         return ret;
     }
 
-    nb_bytes = nb;
+    nb_bytes = nb;  //大小
     p = bytes = b;
     srs_info("init stream ok, size=%d", size());
 
@@ -203,7 +203,7 @@ void SrsStream::write_2bytes(int16_t value)
 void SrsStream::write_4bytes(int32_t value)
 {
     srs_assert(require(4));
-    
+    //大端格式，低位存储高位字节
     char* pp = (char*)&value;
     *p++ = pp[3];
     *p++ = pp[2];

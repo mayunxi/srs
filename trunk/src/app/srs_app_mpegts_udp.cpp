@@ -259,7 +259,8 @@ int SrsMpegtsOverUdp::on_ts_message(SrsTsMessage* msg)
 
     // about the bytes of msg, specified by elementary stream which indicates by PES_packet_data_byte and stream_id
     // for example, when SrsTsStream of SrsTsChannel indicates stream_type is SrsTsStreamVideoMpeg4 and SrsTsStreamAudioMpeg4,
-    // the elementary stream can be mux in "2.11 Carriage of ISO/IEC 14496 data" in hls-mpeg-ts-iso13818-1.pdf, page 103
+    // the elementary stream can be mux in "2.1
+    // 11 Carriage of ISO/IEC 14496 data" in hls-mpeg-ts-iso13818-1.pdf, page 103
     // @remark, the most popular stream_id is 0xe0 for h.264 over mpegts, which indicates the stream_id is video and 
     //      stream_number is 0, where I guess the elementary is specified in annexb format(H.264-AVC-ISO_IEC_14496-10.pdf, page 211).
     //      because when audio stream_number is 0, the elementary is ADTS(aac-mp4a-format-ISO_IEC_14496-3+2001.pdf, page 75, 1.A.2.2 ADTS).

@@ -205,6 +205,7 @@ int srs_st_init()
 #ifdef __linux__
     // check epoll, some old linux donot support epoll.
     // @see https://github.com/ossrs/srs/issues/162
+    //如果是linux平台，需要支持epoll
     if (!srs_st_epoll_is_supported()) {
         ret = ERROR_ST_SET_EPOLL;
         srs_error("epoll required on Linux. ret=%d", ret);
@@ -214,6 +215,7 @@ int srs_st_init()
     
     // Select the best event system available on the OS. In Linux this is
     // epoll(). On BSD it will be kqueue.
+    //设置事件通知机制,ST_EVENTSYS_ALT，它会使用epoll
     if (st_set_eventsys(ST_EVENTSYS_ALT) == -1) {
         ret = ERROR_ST_SET_EPOLL;
         srs_error("st_set_eventsys use %s failed. ret=%d", st_get_eventsys_name(), ret);
@@ -226,6 +228,7 @@ int srs_st_init()
         srs_error("st_init failed. ret=%d", ret);
         return ret;
     }
+    //st_get_eventsys_name() 得到State thread库当前使用的事件通知机制名称，可能返回值是select，poll，kequeue，或epoll
     srs_trace("st_init success, use %s", st_get_eventsys_name());
     
     return ret;

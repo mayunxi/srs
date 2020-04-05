@@ -181,6 +181,7 @@ int SrsUdpListener::cycle()
 
 SrsTcpListener::SrsTcpListener(ISrsTcpHandler* h, string i, int p)
 {
+
     handler = h;
     ip = i;
     port = p;
@@ -216,6 +217,8 @@ int SrsTcpListener::listen()
     srs_verbose("create linux socket success. port=%d, fd=%d", port, _fd);
     
     int reuse_socket = 1;
+    //设置与套接字关联的选项
+    //1.SO_REUSEADDR，允许重用本地地址和端口，端口复用最常用的用途应该是防止服务器重启时之前绑定的端口还未释放或者程序突然退出而系统没有释放端口
     if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &reuse_socket, sizeof(int)) == -1) {
         ret = ERROR_SOCKET_SETREUSE;
         srs_error("setsockopt reuse-addr error. port=%d, ret=%d", port, ret);
@@ -227,6 +230,7 @@ int SrsTcpListener::listen()
     // @see https://github.com/ossrs/srs/issues/1044
 #ifdef SO_KEEPALIVE
     int tcp_keepalive = 1;
+    //TCP层次用KEEPALIVE检测,keepalive只是为了防止连接的双方发生意外而通知不到对方，导致一方还持有连接，占用资源
     if (setsockopt(_fd, SOL_SOCKET, SO_KEEPALIVE, &tcp_keepalive, sizeof(int)) == -1) {
         ret = ERROR_SOCKET_SETKEEPALIVE;
         srs_error("setsockopt SO_KEEPALIVE[%d]error. port=%d, ret=%d", tcp_keepalive, port, ret);
@@ -245,21 +249,21 @@ int SrsTcpListener::listen()
         return ret;
     }
     srs_verbose("bind socket success. ep=%s:%d, fd=%d", ip.c_str(), port, _fd);
-    
+    //监听下一步就是accept
     if (::listen(_fd, SERVER_LISTEN_BACKLOG) == -1) {
         ret = ERROR_SOCKET_LISTEN;
         srs_error("listen socket error. ep=%s:%d, ret=%d", ip.c_str(), port, ret);
         return ret;
     }
     srs_verbose("listen socket success. ep=%s:%d, fd=%d", ip.c_str(), port, _fd);
-    
+    /* Create file descriptor object from OS socket */
     if ((_stfd = st_netfd_open_socket(_fd)) == NULL){
         ret = ERROR_ST_OPEN_SOCKET;
         srs_error("st_netfd_open_socket open socket failed. ep=%s:%d, ret=%d", ip.c_str(), port, ret);
         return ret;
     }
     srs_verbose("st open socket success. ep=%s:%d, fd=%d", ip.c_str(), port, _fd);
-    
+    //SrsReusableThread,构造函数pthread = new SrsReusableThread("tcp", this)
     if ((ret = pthread->start()) != ERROR_SUCCESS) {
         srs_error("st_thread_create listen thread error. ep=%s:%d, ret=%d", ip.c_str(), port, ret);
         return ret;
@@ -273,6 +277,7 @@ int SrsTcpListener::cycle()
 {
     int ret = ERROR_SUCCESS;
     
+    //blocking，wait for requst
     st_netfd_t client_stfd = st_accept(_stfd, NULL, NULL, ST_UTIME_NO_TIMEOUT);
     
     if(client_stfd == NULL){
@@ -283,7 +288,8 @@ int SrsTcpListener::cycle()
         return ret;
     }
     srs_verbose("get a client. fd=%d", st_netfd_fileno(client_stfd));
-    
+    //ISrsTcpHandler*类型,handler指向SrsStreamListener，
+    // 在SrsStreamListener::listen里实现传指针listener = new SrsTcpListener(this, ip, port);
     if ((ret = handler->on_tcp_client(client_stfd)) != ERROR_SUCCESS) {
         srs_warn("accept client error. ret=%d", ret);
         return ret;

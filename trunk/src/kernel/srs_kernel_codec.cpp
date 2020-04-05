@@ -205,6 +205,7 @@ bool SrsFlvCodec::video_is_keyframe(char* data, int size)
 bool SrsFlvCodec::video_is_sequence_header(char* data, int size)
 {
     // sequence header only for h264
+    //CodecID是否为7，7为AVC，也就是H264
     if (!video_is_h264(data, size)) {
         return false;
     }
@@ -777,6 +778,7 @@ int SrsAvcAacCodec::avc_demux_sps_pps(SrsStream* stream)
     
     // AVCDecoderConfigurationRecord
     // 5.2.4.1.1 Syntax, H.264-AVC-ISO_IEC_14496-15.pdf, page 16
+    // 提取AVC sequence header
     avc_extra_size = stream->size() - stream->pos();
     if (avc_extra_size > 0) {
         srs_freepa(avc_extra_data);

@@ -254,10 +254,11 @@ int main(int argc, char** argv)
     int ret = ERROR_SUCCESS;
 
     // TODO: support both little and big endian.
-    srs_assert(srs_is_little_endian());
+    srs_assert(srs_is_little_endian());//是真则执行，假则停止报错
 
     // for gperf gmp or gcp, 
     // should never enable it when not enabled for performance issue.
+    //gperf是google用作内存和CPU分析的工具，主要有三个应用：gmc,gmp,gcp，具体信息查看https://github.com/ossrs/srs/wiki/v1_CN_GPERF
 #ifdef SRS_AUTO_GPERF_MP
     HeapProfilerStart("gperf.srs.gmp");
 #endif
@@ -336,8 +337,9 @@ int main(int argc, char** argv)
 
 int run()
 {
-    // if not deamon, directly run master.
+    // if not deamon(守护进程), directly run master.
     if (!_srs_config->get_deamon()) {
+        //单进程模式
         return run_master();
     }
     
@@ -382,11 +384,11 @@ int run()
 int run_master()
 {
     int ret = ERROR_SUCCESS;
-    
-    if ((ret = _srs_server->initialize_st()) != ERROR_SUCCESS) {
+    //初始化协程,State Threads是一个广受关注的高性能网络线程库
+    if ((ret = _srs_server->initialize_st()) != ERROR_SUCCESS) {		
         return ret;
     }
-    
+    //创建信号管道
     if ((ret = _srs_server->initialize_signal()) != ERROR_SUCCESS) {
         return ret;
     }
@@ -410,7 +412,7 @@ int run_master()
     if ((ret = _srs_server->ingest()) != ERROR_SUCCESS) {
         return ret;
     }
-    
+    //cycle for printing usage of cpu...
     if ((ret = _srs_server->cycle()) != ERROR_SUCCESS) {
         return ret;
     }

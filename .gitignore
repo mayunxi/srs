@@ -25,8 +25,16 @@
 /trunk/research/api-server/static-dir/forward
 /trunk/research/api-server/static-dir/live
 /trunk/research/api-server/static-dir/players
-
+/trunk/ide/srs_clion/cmake-build-debug
 # Apple-specific garbage files.
 .AppleDouble
 
 .idea
+#by mayunxi
+/.DS_Store
+myworkspace/.DS_Store
+myworkspace/._.DS_Store
+/trunk/src/.DS_Store
+/trunk/ide/srs_clion/.DS_Store
+/trunk/ide/srs_qt/srs-qt.pro.user
+/trunk/ide/build-srs-qt-Desktop*

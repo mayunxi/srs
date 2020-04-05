@@ -74,7 +74,7 @@ using namespace std;
 
 // when edge timeout, retry next.
 #define SRS_EDGE_TOKEN_TRAVERSE_TIMEOUT_US (int64_t)(3*1000*1000LL)
-
+//父类构造函数的显式调用:https://blog.csdn.net/sevenjoin/article/details/82222895
 SrsRtmpConn::SrsRtmpConn(SrsServer* svr, st_netfd_t c)
     : SrsConnection(svr, c)
 {
@@ -130,7 +130,7 @@ int SrsRtmpConn::do_cycle()
 {
     int ret = ERROR_SUCCESS;
     
-    srs_trace("RTMP client ip=%s", ip.c_str());
+    srs_trace("RTMP client ip=%s", ip.c_str()); //在SrsConnection::cycle()获取客户端ip，ip = srs_get_peer_ip(st_netfd_fileno(stfd));
 
     rtmp->set_recv_timeout(SRS_CONSTS_RTMP_RECV_TIMEOUT_US);
     rtmp->set_send_timeout(SRS_CONSTS_RTMP_SEND_TIMEOUT_US);
@@ -339,7 +339,7 @@ int SrsRtmpConn::service_cycle()
     }
     srs_verbose("set window acknowledgement size success");
         
-    if ((ret = rtmp->set_peer_bandwidth((int)(2.5 * 1000 * 1000), 2)) != ERROR_SUCCESS) {
+    if ((ret = rtmp->set_peer_bandwidth((int)(2.5  * 1000 * 1000), 2)) != ERROR_SUCCESS) {
         srs_error("set peer bandwidth failed. ret=%d", ret);
         return ret;
     }
@@ -363,7 +363,7 @@ int SrsRtmpConn::service_cycle()
     }
     srs_info("set chunk_size=%d success", chunk_size);
     
-    // response the client connect ok.
+    // response the client connect ok._result cmd.
     if ((ret = rtmp->response_connect_app(req, local_ip.c_str())) != ERROR_SUCCESS) {
         srs_error("response connect app failed. ret=%d", ret);
         return ret;
@@ -375,7 +375,6 @@ int SrsRtmpConn::service_cycle()
         return ret;
     }
     srs_verbose("on_bw_done success");
-    
     while (!disposed) {
         ret = stream_service_cycle();
         
@@ -429,6 +428,7 @@ int SrsRtmpConn::stream_service_cycle()
     int ret = ERROR_SUCCESS;
         
     SrsRtmpConnType type;
+    //客户端身份识别, 首先鉴别客户端请求的类型，是play/publish 或其他，还有播放/推流的流名称
     if ((ret = rtmp->identify_client(res->stream_id, type, req->stream, req->duration)) != ERROR_SUCCESS) {
         if (!srs_is_client_gracefully_close(ret)) {
             srs_error("identify client failed. ret=%d", ret);
@@ -446,7 +446,10 @@ int SrsRtmpConn::stream_service_cycle()
     if (parsed_vhost) {
         req->vhost = parsed_vhost->arg0();
     }
-    
+    /* SRS 不允许请求的流名称为空 */
+    // Never allow the empty stream name, for HLS may write to a file with empty name.
+    // @see https://github.com/ossrs/srs/issues/834:
+    //      SRS2 crashed for TS encoder assert failed
     if (req->schema.empty() || req->vhost.empty() || req->port.empty() || req->app.empty()) {
         ret = ERROR_RTMP_REQ_TCURL;
         srs_error("discovery tcUrl failed. "
@@ -459,7 +462,7 @@ int SrsRtmpConn::stream_service_cycle()
         srs_error("check vhost failed. ret=%d", ret);
         return ret;
     }
-    
+    //到这里rtmp进行到了_result回复releaseStream,FCPublish还没接收到
     srs_trace("connected stream, tcUrl=%s, pageUrl=%s, swfUrl=%s, schema=%s, vhost=%s, port=%s, app=%s, stream=%s, param=%s, args=%s",
         req->tcUrl.c_str(), req->pageUrl.c_str(), req->swfUrl.c_str(),
         req->schema.c_str(), req->vhost.c_str(), req->port.c_str(),
@@ -519,6 +522,7 @@ int SrsRtmpConn::stream_service_cycle()
     source->set_cache(enabled_cache);
     
     client_type = type;
+    srs_trace("client type is %d",type);
     switch (type) {
         case SrsRtmpConnPlay: {
             srs_verbose("start to play stream %s.", req->stream.c_str());
@@ -541,6 +545,7 @@ int SrsRtmpConn::stream_service_cycle()
         }
         case SrsRtmpConnFMLEPublish: {
             srs_verbose("FMLE start to publish stream %s.", req->stream.c_str());
+
             
             if ((ret = rtmp->start_fmle_publish(res->stream_id)) != ERROR_SUCCESS) {
                 srs_error("start to publish stream failed. ret=%d", ret);
@@ -849,7 +854,7 @@ int SrsRtmpConn::publishing(SrsSource* source)
     bool vhost_is_edge = _srs_config->get_vhost_is_edge(req->vhost);
     if ((ret = acquire_publish(source, vhost_is_edge)) == ERROR_SUCCESS) {
         // use isolate thread to recv,
-        // @see: https://github.com/ossrs/srs/issues/237
+        // @see: https://github.com/ossrs/srs/issues/237//作为handler传给SrsThread
         SrsPublishRecvThread trd(rtmp, req, 
             st_netfd_fileno(stfd), 0, this, source,
             client_type != SrsRtmpConnFlashPublish,
@@ -940,6 +945,7 @@ int SrsRtmpConn::do_publishing(SrsSource* source, SrsPublishRecvThread* trd)
         // when not got any messages, timeout.
         if (trd->nb_msgs() <= nb_msgs) {
             ret = ERROR_SOCKET_TIMEOUT;
+
             srs_warn("publish timeout %dms, nb_msgs=%"PRId64", ret=%d",
                 nb_msgs? publish_normal_timeout : publish_1stpkt_timeout, nb_msgs, ret);
             break;
@@ -1014,8 +1020,10 @@ int SrsRtmpConn::handle_publish_message(SrsSource* source, SrsCommonMessage* msg
     int ret = ERROR_SUCCESS;
     
     // process publish event.
-    if (msg->header.is_amf0_command() || msg->header.is_amf3_command()) {
+    if (msg->header.is_amf0_command() || msg->header.is_amf3_command())
+    {
         SrsPacket* pkt = NULL;
+
         if ((ret = rtmp->decode_message(msg, &pkt)) != ERROR_SUCCESS) {
             srs_error("fmle decode unpublish message failed. ret=%d", ret);
             return ret;

@@ -214,6 +214,7 @@ void srs_parse_endpoint(string ip_port, string& ip, string& port)
     port = ip_port;
     
     size_t pos = string::npos;
+    //如果不存在：则返回string::npos
     if ((pos = port.find(":")) != string::npos) {
         ip = port.substr(0, pos);
         port = port.substr(pos + 1);

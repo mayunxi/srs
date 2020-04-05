@@ -229,6 +229,7 @@ public:
 * SRS RTMP server, initialize and listen, 
 * start connection service thread, destroy client.
 */
+//虚继承
 class SrsServer : virtual public ISrsReloadHandler
     , virtual public ISrsSourceHandler
     , virtual public IConnectionManager
@@ -278,7 +279,7 @@ private:
     bool signal_gmc_stop;
     bool signal_gracefully_quit;
     // parent pid for asprocess.
-    int ppid;
+    int ppid;		
 public:
     SrsServer();
     virtual ~SrsServer();

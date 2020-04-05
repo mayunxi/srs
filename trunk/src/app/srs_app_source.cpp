@@ -1890,9 +1890,16 @@ int SrsSource::on_video_imp(SrsSharedPtrMessage* msg)
     int ret = ERROR_SUCCESS;
     
     srs_info("Video dts=%"PRId64", size=%d", msg->timestamp, msg->size);
-    
+
+    //判断FrameType是否为1(key frame)，AVCPacketType是否为0(AVC sequence header)
     bool is_sequence_header = SrsFlvCodec::video_is_sequence_header(msg->payload, msg->size);
-    
+    //debug for 第二个关键帧能断点
+    if (!is_sequence_header)
+    {
+
+        int test = 1;
+    }
+    //end debug
     // whether consumer should drop for the duplicated sequence header.
     bool drop_for_reduce = false;
     if (is_sequence_header && cache_sh_video && _srs_config->get_reduce_sequence_header(_req->vhost)) {

@@ -137,7 +137,7 @@ SrsPacket::~SrsPacket()
 {
 }
 
-int SrsPacket::encode(int& psize, char*& ppayload)
+int SrsPacket:: encode(int& psize, char*& ppayload)
 {
     int ret = ERROR_SUCCESS;
     
@@ -155,7 +155,7 @@ int SrsPacket::encode(int& psize, char*& ppayload)
             return ret;
         }
     }
-    
+    //派生类方法，调用各自的encode_packet
     if ((ret = encode_packet(&stream)) != ERROR_SUCCESS) {
         srs_error("encode the packet failed. ret=%d", ret);
         srs_freepa(payload);
@@ -631,8 +631,9 @@ int SrsProtocol::do_send_and_free_packet(SrsPacket* packet, int stream_id)
     header.payload_length = size;
     header.message_type = packet->get_message_type();
     header.stream_id = stream_id;
-    header.perfer_cid = packet->get_prefer_cid();
-    
+    header.perfer_cid = packet->get_prefer_cid();     //csid
+
+    srs_trace("send frame to client");
     ret = do_simple_send(&header, payload, size);
     srs_freepa(payload);
     if (ret == ERROR_SUCCESS) {
@@ -651,7 +652,7 @@ int SrsProtocol::do_simple_send(SrsMessageHeader* mh, char* payload, int size)
     // but it's ok.
     char* p = payload;
     char* end = p + size;
-    char c0c3[SRS_CONSTS_RTMP_MAX_FMT0_HEADER_SIZE];
+    char c0c3[SRS_CONSTS_RTMP_MAX_FMT0_HEADER_SIZE];  //fmt=0时，chunk header最大字节数
     while (p < end) {
         int nbh = 0;
         if (p == payload) {
@@ -674,7 +675,7 @@ int SrsProtocol::do_simple_send(SrsMessageHeader* mh, char* payload, int size)
         iovs[1].iov_base = p;
         iovs[1].iov_len = payload_size;
         p += payload_size;
-        
+        //SrsStSocket::writev
         if ((ret = skt->writev(iovs, 2, NULL)) != ERROR_SUCCESS) {
             if (!srs_is_client_gracefully_close(ret)) {
                 srs_error("send packet with writev failed. ret=%d", ret);
@@ -1059,8 +1060,8 @@ int SrsProtocol::read_basic_header(char& fmt, int& cid)
     }
     
     fmt = in_buffer->read_1byte();
-    cid = fmt & 0x3f;
-    fmt = (fmt >> 6) & 0x03;
+    cid = fmt & 0x3f;                 //>1,1byte;=0,2byte;=1,3byte
+    fmt = (fmt >> 6) & 0x03;   //高两位为fmt
     
     // 2-63, 1B chunk header
     if (cid > 1) {
@@ -1253,7 +1254,7 @@ int SrsProtocol::read_message_header(SrsChunkStream* chunk, char fmt)
         if (fmt <= RTMP_FMT_TYPE1) {
             int32_t payload_length = 0;
             pp = (char*)&payload_length;
-            pp[2] = *p++;
+            pp[2] = *p++;               //bigend
             pp[1] = *p++;
             pp[0] = *p++;
             pp[3] = 0;
@@ -1275,7 +1276,7 @@ int SrsProtocol::read_message_header(SrsChunkStream* chunk, char fmt)
             
             if (fmt == RTMP_FMT_TYPE0) {
                 pp = (char*)&chunk->header.stream_id;
-                pp[0] = *p++;
+                pp[0] = *p++;   //小端
                 pp[1] = *p++;
                 pp[2] = *p++;
                 pp[3] = *p++;
@@ -1910,7 +1911,7 @@ int SrsHandshakeBytes::create_s0s1s2(const char* c1)
     if (s0s1s2) {
         return ret;
     }
-    
+    //1+2*1536
     s0s1s2 = new char[3073];
     srs_random_generate(s0s1s2, 3073);
     
@@ -1919,14 +1920,16 @@ int SrsHandshakeBytes::create_s0s1s2(const char* c1)
     if ((ret = stream.initialize(s0s1s2, 9)) != ERROR_SUCCESS) {
         return ret;
     }
+    //s0
     stream.write_1bytes(0x03);
-    stream.write_4bytes((int32_t)::time(NULL));
+    stream.write_4bytes((int32_t)::time(NULL)); //s1写入time(NULL):当前unix时间戳
     // s1 time2 copy from c1
+    //写不写这个字段实验过没有影响
     if (c0c1) {
         stream.write_bytes(c0c1 + 1, 4);
     }
-    
-    // if c1 specified, copy c1 to s2.
+
+    // if c1 specified（指定，具体说明）, copy c1 to s2.
     // @see: https://github.com/ossrs/srs/issues/46
     if (c1) {
         memcpy(s0s1s2 + 1537, c1, 1536);
@@ -2484,6 +2487,7 @@ int SrsRtmpServer::connect_app(SrsRequest* req)
     
     SrsCommonMessage* msg = NULL;
     SrsConnectAppPacket* pkt = NULL;
+    //模板函数
     if ((ret = expect_message<SrsConnectAppPacket>(&msg, &pkt)) != ERROR_SUCCESS) {
         srs_error("expect connect app message failed. ret=%d", ret);
         return ret;
@@ -2493,7 +2497,7 @@ int SrsRtmpServer::connect_app(SrsRequest* req)
     srs_info("get connect app message");
     
     SrsAmf0Any* prop = NULL;
-    
+    //rtmp://
     if ((prop = pkt->command_object->ensure_property_string("tcUrl")) == NULL) {
         ret = ERROR_RTMP_REQ_CONNECT;
         srs_error("invalid request, must specifies the tcUrl. ret=%d", ret);
@@ -2567,7 +2571,7 @@ int SrsRtmpServer::response_connect_app(SrsRequest *req, const char* server_ip)
     
     SrsConnectAppResPacket* pkt = new SrsConnectAppResPacket();
     
-    pkt->props->set("fmsVer", SrsAmf0Any::str("FMS/"RTMP_SIG_FMS_VER));
+    pkt->props->set("fmsVer", SrsAmf0Any::str("FMS/"RTMP_SIG_FMS_VER)); //fms:Flash Media Server
     pkt->props->set("capabilities", SrsAmf0Any::number(127));
     pkt->props->set("mode", SrsAmf0Any::number(1));
     
@@ -2673,7 +2677,7 @@ int SrsRtmpServer::identify_client(int stream_id, SrsRtmpConnType& type, string&
         }
         
         SrsAutoFree(SrsPacket, pkt);
-        
+        //关于dynamic_cast,https://www.jianshu.com/p/3eb651f5c4d4
         if (dynamic_cast<SrsCreateStreamPacket*>(pkt)) {
             srs_info("identify client by create stream, play or flash publish.");
             return identify_create_stream_client(dynamic_cast<SrsCreateStreamPacket*>(pkt), stream_id, type, stream_name, duration);
@@ -2686,6 +2690,7 @@ int SrsRtmpServer::identify_client(int stream_id, SrsRtmpConnType& type, string&
             srs_info("level0 identify client by play.");
             return identify_play_client(dynamic_cast<SrsPlayPacket*>(pkt), type, stream_name, duration);
         }
+        //推流不会执行到这里
         // call msg,
         // support response null first,
         // @see https://github.com/ossrs/srs/issues/106
@@ -2902,6 +2907,7 @@ int SrsRtmpServer::start_fmle_publish(int stream_id)
     }
     // FCPublish response
     if (true) {
+        //_result
         SrsFMLEStartResPacket* pkt = new SrsFMLEStartResPacket(fc_publish_tid);
         if ((ret = protocol->send_and_free_packet(pkt, 0)) != ERROR_SUCCESS) {
             srs_error("send FCPublish response message failed. ret=%d", ret);
@@ -2928,6 +2934,7 @@ int SrsRtmpServer::start_fmle_publish(int stream_id)
     }
     // createStream response
     if (true) {
+        //_result
         SrsCreateStreamResPacket* pkt = new SrsCreateStreamResPacket(create_stream_tid, stream_id);
         if ((ret = protocol->send_and_free_packet(pkt, 0)) != ERROR_SUCCESS) {
             srs_error("send createStream response message failed. ret=%d", ret);
@@ -3190,7 +3197,7 @@ int SrsRtmpServer::identify_fmle_publish_client(SrsFMLEStartPacket* req, SrsRtmp
     type = SrsRtmpConnFMLEPublish;
     stream_name = req->stream_name;
     
-    // releaseStream response
+    // releaseStream response,_result
     if (true) {
         SrsFMLEStartResPacket* pkt = new SrsFMLEStartResPacket(req->transaction_id);
         if ((ret = protocol->send_and_free_packet(pkt, 0)) != ERROR_SUCCESS) {

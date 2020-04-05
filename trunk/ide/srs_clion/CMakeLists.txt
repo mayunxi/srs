@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.6.4)
 project(srs CXX)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 INCLUDE_DIRECTORIES(../../objs 
     ../../objs/st ../../objs/hp ../../objs/openssl/include 
     ../../src/core ../../src/kernel ../../src/protocol ../../src/app)

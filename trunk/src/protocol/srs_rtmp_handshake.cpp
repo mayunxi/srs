@@ -1114,6 +1114,7 @@ int SrsSimpleHandshake::handshake_with_client(SrsHandshakeBytes* hs_bytes, ISrsP
     }
 
     // plain text required.
+    //the first byte is protocl version,must be 3
     if (hs_bytes->c0c1[0] != 0x03) {
         ret = ERROR_RTMP_PLAIN_REQUIRED;
         srs_warn("only support rtmp plain text. ret=%d", ret);

@@ -129,9 +129,10 @@ SrsListenerType SrsListener::listen_type()
 {
     return type;
 }
-
+//派生类的成员只能访问基类中的public/protected成员，初始化基类
 SrsStreamListener::SrsStreamListener(SrsServer* svr, SrsListenerType t) : SrsListener(svr, t)
 {
+    //SrsTcpListener 在listen里new了
     listener = NULL;
 }
 
@@ -146,10 +147,11 @@ int SrsStreamListener::listen(string i, int p)
     
     ip = i;
     port = p;
-
+    //SrsTcpListener，不为null，则释放。构造函数里初始化为null
     srs_freep(listener);
+    //里面建立线程类接口SrsReusableThread，这个说明可以拥有可以在线程中运行的能力
     listener = new SrsTcpListener(this, ip, port);
-
+    //建立了真正的底层监听类
     if ((ret = listener->listen()) != ERROR_SUCCESS) {
         srs_error("tcp listen failed. ret=%d", ret);
         return ret;
@@ -167,7 +169,7 @@ int SrsStreamListener::listen(string i, int p)
 int SrsStreamListener::on_tcp_client(st_netfd_t stfd)
 {
     int ret = ERROR_SUCCESS;
-    
+    //
     if ((ret = server->accept_client(type, stfd)) != ERROR_SUCCESS) {
         srs_warn("accept client error. ret=%d", ret);
         return ret;
@@ -391,7 +393,9 @@ int SrsSignalManager::initialize()
     int ret = ERROR_SUCCESS;
     
     /* Create signal pipe */
-    if (pipe(sig_pipe) < 0) {
+    //sig_pipe[0]:读端，sig_pipe[1]:写端
+    if (pipe(sig_pipe) < 0)  //管道创建
+    {
         ret = ERROR_SYSTEM_CREATE_PIPE;
         srs_error("create signal manager pipe failed. ret=%d", ret);
         return ret;
@@ -678,7 +682,14 @@ int SrsServer::acquire_pid_file()
         return ret;
     }
     
-    // require write lock
+    // require write lock（文件锁）
+//    struct flock {
+//        short l_type;   /* 锁类型: F_RDLCK, F_WRLCK, F_UNLCK */
+//        short l_whence; /* SEEK_SET(起始),SEEK_CUR(当前), SEEK_END(结尾) */
+//        off_t l_start;   /* 根据l_whence决定偏移量，可以为负数 */
+//        off_t l_len;     /* 锁定字节数，0 代表直到EOF */
+//        pid_t l_pid;     /* 阻止我们取得锁的pid (F_GETLK only) */
+//    };
     struct flock lock;
 
     lock.l_type = F_WRLCK; // F_RDLCK, F_WRLCK, F_UNLCK
@@ -1080,13 +1091,16 @@ int SrsServer::listen_rtmp()
     close_listeners(SrsListenerRtmpStream);
     
     for (int i = 0; i < (int)ip_ports.size(); i++) {
+        //基类指针指向派生类对象
         SrsListener* listener = new SrsStreamListener(this, SrsListenerRtmpStream);
         listeners.push_back(listener);
         
         std::string ip;
         int port;
+        //分离ip和port
         srs_parse_endpoint(ip_ports[i], ip, port);
-        
+        //用基类指针调用派生类的同名成员函数，因为该函数为虚函数，
+        // listen里new了SrsTcpListener，这才是底层真正的监听
         if ((ret = listener->listen(ip, port)) != ERROR_SUCCESS) {
             srs_error("RTMP stream listen at %s:%d failed. ret=%d", ip.c_str(), port, ret);
             return ret;
@@ -1256,6 +1270,8 @@ int SrsServer::accept_client(SrsListenerType type, st_netfd_t client_stfd)
     // avoid fd leak when fork.
     // @see https://github.com/ossrs/srs/issues/518
     if (true) {
+        //取得与文件描述符fd联合的close-on-exec标志，此标志用来控制在执行exec时，是否关闭对应的文件描述符
+        //@see https://www.cnblogs.com/sunrisezhang/p/4113500.html
         int val;
         if ((val = fcntl(fd, F_GETFD, 0)) < 0) {
             ret = ERROR_SYSTEM_PID_GET_FILE_INFO;
@@ -1273,9 +1289,12 @@ int SrsServer::accept_client(SrsListenerType type, st_netfd_t client_stfd)
     }
     
     SrsConnection* conn = NULL;
-    if (type == SrsListenerRtmpStream) {
+    if (type == SrsListenerRtmpStream)
+    {
         conn = new SrsRtmpConn(this, client_stfd);
-    } else if (type == SrsListenerHttpApi) {
+    }
+    else if (type == SrsListenerHttpApi)
+    {
 #ifdef SRS_AUTO_HTTP_API
         conn = new SrsHttpApi(this, client_stfd, http_api_mux);
 #else
@@ -1283,7 +1302,9 @@ int SrsServer::accept_client(SrsListenerType type, st_netfd_t client_stfd)
         srs_close_stfd(client_stfd);
         return ret;
 #endif
-    } else if (type == SrsListenerHttpStream) {
+    }
+    else if (type == SrsListenerHttpStream)
+    {
 #ifdef SRS_AUTO_HTTP_SERVER
         conn = new SrsResponseOnlyHttpConn(this, client_stfd, http_server);
 #else
@@ -1291,7 +1312,9 @@ int SrsServer::accept_client(SrsListenerType type, st_netfd_t client_stfd)
         srs_close_stfd(client_stfd);
         return ret;
 #endif
-    } else {
+    }
+    else
+    {
         // TODO: FIXME: handler others
     }
     srs_assert(conn);

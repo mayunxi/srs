@@ -203,7 +203,7 @@ namespace internal {
                 goto failed;
             }
             srs_info("thread %s on before cycle success", _name);
-            
+            //构造函数里ISrsThreadHandler* handler = thread_handler（SrsReusableThread）
             if ((ret = handler->cycle()) != ERROR_SUCCESS) {
                 if (!srs_is_client_gracefully_close(ret) && !srs_is_system_control_error(ret)) {
                     srs_warn("thread %s cycle failed, ignored and retry, ret=%d", _name, ret);
@@ -242,6 +242,7 @@ namespace internal {
         SrsThread* obj = (SrsThread*)arg;
         srs_assert(obj);
         
+        ///进入协程循环
         obj->thread_cycle();
         
         // for valgrind to detect.
@@ -352,6 +353,7 @@ void ISrsOneCycleThreadHandler::on_thread_stop()
 
 SrsOneCycleThread::SrsOneCycleThread(const char* n, ISrsOneCycleThreadHandler* h)
 {
+    //SrsConnection
     handler = h;
     pthread = new internal::SrsThread(n, this, 0, false);
 }
@@ -364,6 +366,7 @@ SrsOneCycleThread::~SrsOneCycleThread()
 
 int SrsOneCycleThread::start()
 {
+    //SrsThread,构造函数中pthread = new internal::SrsThread(n, this, 0, false);
     return pthread->start();
 }
 
@@ -423,6 +426,7 @@ void ISrsReusableThreadHandler::on_thread_stop()
 SrsReusableThread::SrsReusableThread(const char* n, ISrsReusableThreadHandler* h, int64_t interval_us)
 {
     handler = h;
+    //start in SrsTcpListener.listen()
     pthread = new internal::SrsThread(n, this, interval_us, true);
 }
 
@@ -434,6 +438,7 @@ SrsReusableThread::~SrsReusableThread()
 
 int SrsReusableThread::start()
 {
+    //SrsThread,构造函数里pthread = new internal::SrsThread(n, this, interval_us, true)
     return pthread->start();
 }
 

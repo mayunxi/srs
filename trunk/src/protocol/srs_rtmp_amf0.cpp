@@ -1542,7 +1542,7 @@ int srs_amf0_read_string(SrsStream* stream, string& value)
 {
     int ret = ERROR_SUCCESS;
     
-    // marker
+    // marker,判断是否有数据可读
     if (!stream->require(1)) {
         ret = ERROR_RTMP_AMF0_DECODE;
         srs_error("amf0 read string marker failed. ret=%d", ret);

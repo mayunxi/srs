@@ -116,6 +116,7 @@ class SrsTcpListener : public ISrsReusableThreadHandler
 private:
     int _fd;
     st_netfd_t _stfd;
+    //new in constrcut
     SrsReusableThread* pthread;
 private:
     ISrsTcpHandler* handler;

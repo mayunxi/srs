@@ -98,6 +98,7 @@ int SrsRecvThread::cycle()
         
         // recv and handle message
         ret = rtmp->recv_message(&msg);
+        //SrsPublishRecvThread::handle
         if (ret == ERROR_SUCCESS) {
             ret = handler->handle(msg);
         }
@@ -245,8 +246,7 @@ void SrsQueueRecvThread::on_thread_stop()
 }
 
 SrsPublishRecvThread::SrsPublishRecvThread(
-    SrsRtmpServer* rtmp_sdk, 
-    SrsRequest* _req, int mr_sock_fd, int timeout_ms, 
+    SrsRtmpServer* rtmp_sdk,SrsRequest* _req, int mr_sock_fd, int timeout_ms,
     SrsRtmpConn* conn, SrsSource* source, bool is_fmle, bool is_edge
 ): trd(this, rtmp_sdk, timeout_ms)
 {

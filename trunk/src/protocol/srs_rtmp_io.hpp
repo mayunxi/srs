@@ -37,9 +37,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /**
 * the system io reader/writer architecture:
-+---------------+     +--------------------+      +---------------+
-| IBufferReader |     |    IStatistic      |      | IBufferWriter |
-+---------------+     +--------------------+      +---------------+
++----------------+     +--------------------+      +---------------+
+| ISrsBufferReader |     |    IStatistic      |   | ISrsBufferWriter |
++----------------+     +--------------------+      +---------------+
 | + read()      |     | + get_recv_bytes() |      | + write()     |
 +------+--------+     | + get_recv_bytes() |      | + writev()    |
       / \             +---+--------------+-+      +-------+-------+
@@ -57,6 +57,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           |       IProtocolReaderWriter      |
           +----------------------------------+
           | + is_never_timeout()             |
+          +----------------------------------+
+                        / \
+                         /
+          +------------------------------+---+
+          |        SrsStSocket               |
+          +----------------------------------+
+          |                                  |
           +----------------------------------+
 */
 

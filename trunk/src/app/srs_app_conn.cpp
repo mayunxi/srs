@@ -74,6 +74,7 @@ void SrsConnection::dispose()
 
 int SrsConnection::start()
 {
+    //构造函数中pthread = new SrsOneCycleThread("conn", this);
     return pthread->start();
 }
 
@@ -85,7 +86,8 @@ int SrsConnection::cycle()
     id = _srs_context->get_id();
     
     ip = srs_get_peer_ip(st_netfd_fileno(stfd));
-    
+
+    //在子类中实现
     ret = do_cycle();
     
     // if socket io error, set to closed.

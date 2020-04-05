@@ -135,7 +135,7 @@ int SrsFastBuffer::grow(ISrsBufferReader* reader, int required_size)
 {
     int ret = ERROR_SUCCESS;
 
-    // already got required size of bytes.
+    // already got required size of bytes.=0则需要接收
     if (end - p >= required_size) {
         return ret;
     }
@@ -182,6 +182,7 @@ int SrsFastBuffer::grow(ISrsBufferReader* reader, int required_size)
     // buffer is ok, read required size of bytes.
     while (end - p < required_size) {
         ssize_t nread;
+        //SrsStSocket::read
         if ((ret = reader->read(end, nb_free_space, &nread)) != ERROR_SUCCESS) {
             return ret;
         }
