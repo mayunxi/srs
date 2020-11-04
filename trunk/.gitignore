@@ -2,6 +2,7 @@
 /*.conf
 /*.txt
 /*.flv
+/*.mp4
 /doc/frozen*.flv
 /doc/kungfupanda*.flv
 /doc/time*.flv
@@ -39,3 +40,5 @@ srs
 *.ts
 *.h264
 *.264
+3rdparty/ffmpeg-4.2-fit
+bug

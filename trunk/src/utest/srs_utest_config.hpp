@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2013-2019 Winlin
+Copyright (c) 2013-2020 Winlin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -35,7 +35,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define _MIN_OK_CONF "listen 1935; "
 
-class MockSrsConfigBuffer : public _srs_internal::SrsConfigBuffer
+class MockSrsConfigBuffer : public srs_internal::SrsConfigBuffer
 {
 public:
     MockSrsConfigBuffer(std::string buf);

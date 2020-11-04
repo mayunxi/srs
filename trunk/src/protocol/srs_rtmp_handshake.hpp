@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2019 Winlin
+ * Copyright (c) 2013-2020 Winlin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -34,7 +34,7 @@ class SrsBuffer;
 // For openssl.
 #include <openssl/hmac.h>
 
-namespace _srs_internal
+namespace srs_internal
 {
     // The digest key generate size.
     #define SRS_OpensslHashSize 512

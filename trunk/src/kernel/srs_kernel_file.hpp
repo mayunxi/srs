@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2019 Winlin
+ * Copyright (c) 2013-2020 Winlin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -34,6 +34,8 @@
 #ifndef _WIN32
 #include <sys/uio.h>
 #endif
+
+class SrsFileReader;
 
 /**
  * file writer, to write to file.
@@ -73,6 +75,16 @@ public:
     virtual srs_error_t lseek(off_t offset, int whence, off_t* seeked);
 };
 
+// The file reader factory.
+class ISrsFileReaderFactory
+{
+public:
+    ISrsFileReaderFactory();
+    virtual ~ISrsFileReaderFactory();
+public:
+    virtual SrsFileReader* create_file_reader();
+};
+
 /**
  * file reader, to read from file.
  */
@@ -109,11 +121,11 @@ public:
 };
 
 // For utest to mock it.
-typedef int (*_srs_open_t)(const char* path, int oflag, ...);
-typedef ssize_t (*_srs_write_t)(int fildes, const void* buf, size_t nbyte);
-typedef ssize_t (*_srs_read_t)(int fildes, void* buf, size_t nbyte);
-typedef off_t (*_srs_lseek_t)(int fildes, off_t offset, int whence);
-typedef int (*_srs_close_t)(int fildes);
+typedef int (*srs_open_t)(const char* path, int oflag, ...);
+typedef ssize_t (*srs_write_t)(int fildes, const void* buf, size_t nbyte);
+typedef ssize_t (*srs_read_t)(int fildes, void* buf, size_t nbyte);
+typedef off_t (*srs_lseek_t)(int fildes, off_t offset, int whence);
+typedef int (*srs_close_t)(int fildes);
 
 #endif
 

@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2013-2019 Winlin
+Copyright (c) 2013-2020 Winlin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -37,7 +37,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <srs_protocol_stream.hpp>
 #include <srs_protocol_kbps.hpp>
 
-using namespace _srs_internal;
+using namespace srs_internal;
 
 #include <srs_protocol_io.hpp>
 
@@ -80,10 +80,22 @@ public:
     // data buffer for socket send.
     SrsSimpleStream out_buffer;
 public:
+    // Mock error for io.
+    srs_error_t in_err;
+    srs_error_t out_err;
+public:
     MockBufferIO();
     virtual ~MockBufferIO();
 public:
+    virtual int length();
     virtual MockBufferIO* append(std::string data);
+    virtual MockBufferIO* append(MockBufferIO* data);
+    virtual MockBufferIO* append(uint8_t* data, int size);
+public:
+    virtual int out_length();
+    virtual MockBufferIO* out_append(std::string data);
+    virtual MockBufferIO* out_append(MockBufferIO* data);
+    virtual MockBufferIO* out_append(uint8_t* data, int size);
 // for handshake.
 public:
     virtual srs_error_t read_fully(void* buf, size_t size, ssize_t* nread);
